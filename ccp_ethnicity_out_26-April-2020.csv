@@ -1,4 +1,4 @@
-redcap_data_access_group,dag_id,place_name,postcode,country,lon,lat,ccg,area_name,perc_asian,perc_black,perc_white,perc_other
+redcap_data_access_group_e,dag_id_e,place_name,postcode,country,lon,lat,ccg,area_name,perc_asian,perc_black,perc_white,perc_other
 Cardiff and Vale University Health Board,7AH41,Cardiff and Vale University Health Board,CF14 4XW,Wales,-3.1902577,51.5067958,W11000029,NA,5.562,1.665,88.845,3.8965
 North Manchester General Hospital,01452,North Manchester General Hospital,M8 5RB,England,-2.2301193,53.5184925,E38000217,NHS Manchester CCG,17.0903,33.3947,59.2767,0
 North Manchester General Hospital,04152,North Manchester General Hospital,M8 5RB,England,-2.2301193,53.5184925,E38000217,NHS Manchester CCG,17.0903,33.3947,59.2767,0
@@ -88,7 +88,7 @@ University Hospitals Bristol NHFT,RA707,St Michael's Hospital,BS2 8EG,England,-2
 ",7.1606999999999985,9.7726,85.6786,7.1606999999999985
 University Hospitals Bristol NHFT,RA723,Bristol Royal Hospital For Children,BS2 8BJ,England,-2.5973148345947266,51.4577522277832,E38000222,"NHS Bristol, North Somerset and South Gloucestershire CCG
 ",7.1606999999999985,9.7726,85.6786,7.1606999999999985
-Torbay and south Devon Hospital,RA901,Torbay Hospital,TQ2 7AA,England,-3.55379056930542,50.482322692871094,E38000230,NA,NA,NA,NA,NA
+Torbay and south Devon Hospital,RA901,Torbay Hospital,TQ2 7AA,England,-3.55379056930542,50.482322692871094,E38000152,NHS South Devon And Torbay CCG,0.8556,2.0959,95.3628,1.6857000000000113
 Bradford Teaching Hospitals NHSFT,RAE01,Bradford Royal Infirmary,BD9 6RJ,England,-1.7946816682815552,53.80598449707031,E38000019,NHS Bradford Districts CCG,23.1026,28.6838,68.1909,0
 Mid and South Essex University Hospitals Group,RAJ01,Southend Hospital,SS0 0RY,England,0.6886317729949951,51.553836822509766,E38000168,NHS Southend CCG,3.7084,8.4275,87.0308,0.8333000000000084
 Royal Free Hospital,RAL01,Royal Free Hospital,NW3 2QG,England,-0.16530923545360565,51.55322265625,E38000027,NHS Camden CCG,16.0871,33.7132,43.9947,6.204999999999998
@@ -102,7 +102,7 @@ Whiston Hospital,RBN01,Whiston Hospital,L35 5DR,England,-2.7849390506744385,53.4
 Royal Liverpool & Broadgreen University Hospitals NHSFT,RBQHQ,Liverpool Heart And Chest Hospital,L14 3PE,England,-2.897974729537964,53.411155700683594,E38000101,NHS Liverpool CCG,4.16,11.094,84.7925,0
 Mid Cheshire Hospital Trust,RBT20,Leighton Hospital,CW1 4QJ,England,-2.475848436355591,53.11769104003906,E38000151,NHS South Cheshire CCG,1.206,2.8834,93.4103,2.5002999999999957
 The Christie NHSFT,RBV01,The Christie Main Site,M20 4BX,England,-2.2301101684570312,53.429771423339844,E38000217,NHS Manchester CCG,17.0903,33.3947,59.2767,0
-Northern Devon Healthcare Trust,RBZ12,North Devon District Hospital,EX31 4JB,England,-4.050417900085449,51.0921745300293,E38000230,NA,NA,NA,NA,NA
+Northern Devon Healthcare Trust,RBZ12,North Devon District Hospital,EX31 4JB,England,-4.050417900085449,51.0921745300293,E38000129,"NHS Northern, Eastern And Western Devon CCG",1.3507,2.9889,94.1851,1.47529999999999
 Luton and Dunstable,RC971,Luton And Dunstable Hospital,LU4 0DZ,England,-0.47441545128822327,51.89414596557617,E38000102,NHS Luton CCG,29.9959,45.3354,44.5519,0
 York Teaching Hospital,RCB55,The York Hospital,YO31 8HE,England,-1.084269642829895,53.96895217895508,E38000188,NHS Vale Of York CCG,2.2174,3.9833,92.5621,1.2372000000000014
 Harrogate District Hospital,RCD01,Harrogate District Hospital,HG2 7SX,England,-1.5175583362579346,53.99380874633789,E38000073,NHS Harrogate And Rural District CCG,1.5259,3.6701,91.669,3.135000000000005
@@ -126,14 +126,14 @@ Royal Liverpool & Broadgreen University Hospitals NHSFT,REMRQ,Royal Liverpool Un
 Barking Havering and Redbridge University NHST,RF4QH,Queen's Hospital,RM7 0AG,England,0.18040530383586884,51.569427490234375,E38000077,NHS Havering CCG,4.8665,12.3436,83.3003,0
 Barnsley Hospital,RFFAA,Barnsley Hospital,S75 2EP,England,-1.4994779825210571,53.55913543701172,E38000006,NHS Barnsley CCG,0.7184,2.1348,96.083,1.0638000000000005
 The Rotherham NHSFT,RFRPA,Rotherham Hospital,S60 2UD,England,-1.3428654670715332,53.41397476196289,E38000141,NHS Rotherham CCG,4.101,6.4218,91.8991,0
-Chesterfield Royal Hospital NHSFT,RFSDA,Chesterfield Royal Hospital,S44 5BL,England,-1.4000365734100342,53.2362174987793,E38000229,NA,NA,NA,NA,NA
+Chesterfield Royal Hospital NHSFT,RFSDA,Chesterfield Royal Hospital,S44 5BL,England,-1.4000365734100342,53.2362174987793,E38000115,NHS North Derbyshire CCG,1.0285,2.4589,95.8991,0.6135000000000019
 Royal Papworth Hospital NHSFT,RGM21,Royal Papworth Hospital,CB2 0AY,England,0.13618962466716766,52.172386169433594,E38000026,NHS Cambridgeshire and Peterborough CCG,5.6878,9.4899,81.7898,3.032499999999999
 North West Anglia NHSFT,RGN80,Peterborough City Hospital,PE3 9GZ,England,-0.2785687,52.5837926,E38000026,NHS Cambridgeshire and Peterborough CCG,5.6878,9.4899,81.7898,3.032499999999999
 North West Anglia NHSFT,RGN90,Hinchingbrooke Hospital,PE29 6NT,England,-0.20266403257846832,52.333351135253906,E38000026,NHS Cambridgeshire and Peterborough CCG,5.6878,9.4899,81.7898,3.032499999999999
 James Paget University Hospitals,RGP75,James Paget University Hospital,NR31 6LA,England,1.7179944515228271,52.561668395996094,E38000063,NHS Great Yarmouth And Waveney CCG,1.0177,2.6947,94.4168,1.8708000000000027
 West Suffolk Hospital,RGR50,West Suffolk Hospital,IP33 2QZ,England,0.7091901898384094,52.23166275024414,E38000204,NHS West Suffolk CCG,1.5819,4.6485,88.3243,5.445300000000003
 Addenbrookes Hospital,RGT01,Addenbrooke's,CB2 0QQ,England,0.14075323939323425,52.175132751464844,E38000026,NHS Cambridgeshire and Peterborough CCG,5.6878,9.4899,81.7898,3.032499999999999
-Royal Devon and Exeter Hospital,RH801,Royal Devon And Exeter Hospital (Wonford),EX2 5DW,England,-3.506666421890259,50.71670913696289,E38000230,NA,NA,NA,NA,NA
+Royal Devon and Exeter Hospital,RH801,Royal Devon And Exeter Hospital (Wonford),EX2 5DW,England,-3.506666421890259,50.71670913696289,E38000152,NHS South Devon And Torbay CCG,0.8556,2.0959,95.3628,1.6857000000000113
 "Queen Elizabeth University Hospital, Glasgow University Hospital Monklands Airdrie",RHM01,Queen Elizabeth University Hospital,G51 4TF,Scotland,-1.4350899457931519,50.933021545410156,S08000031,NA,5.156385980642949,1.3432415148078798,92.70945963764868,0.4040685408370474
 Sheffield Teaching Hospitals NHS Foundation Trust,RHQHH,Royal Hallamshire Hospital,S10 2JF,England,-1.4933162927627563,53.37835693359375,E38000146,NHS Sheffield CCG,8.0306,16.3116,80.84649999999999,0
 Queen Alexandra Hospital,RHU03,Queen Alexandra Hospital,PO6 3LY,England,-1.0699176788330078,50.85029983520508,E38000137,NHS Portsmouth CCG,6.0832,11.6427,84.0322,0
@@ -152,7 +152,7 @@ Countess Of Chester Hospital,RJR05,Countess Of Chester Hospital,CH2 1HJ,England,
 Countess Of Chester Hospital,RJR05,Countess Of Chester Hospital,CH2 1HJ,England,-2.899009943008423,53.21177291870117,E38000196,NHS West Cheshire CCG,1.3605,2.838,94.1203,1.681200000000004
 King's College Hospital,RJZ01,King's College Hospital,SE5 9RS,England,-0.0939013883471489,51.46807861328125,E38000092,NHS Lambeth CCG,6.9083,42.9122,39.0153,11.164199999999994
 Sherwood Forest Hospitals NHSFT,RK5BC,King's Mill Hospital,NG17 4JL,England,-1.233566164970398,53.13455581665039,E38000103,NHS Mansfield And Ashfield CCG,1.0695,2.4882,94.5706,1.8717000000000041
-University Hospital Plymouth,RK950,Derriford Hospital,PL6 8DH,England,-4.11367130279541,50.41672897338867,E38000230,NA,NA,NA,NA,NA
+University Hospital Plymouth,RK950,Derriford Hospital,PL6 8DH,England,-4.11367130279541,50.41672897338867,E38000152,NHS South Devon And Torbay CCG,0.8556,2.0959,95.3628,1.6857000000000113
 University Hospitals Coventry and Warwickshire,RKB01,University Hospital (Coventry),CV2 2DX,England,-1.4383885860443115,52.42121505737305,E38000038,NHS Coventry And Rugby CCG,13.6255,22.1662,70.8329,0
 Whittington Health NHST,RKEQ4,The Whittington Hospital,N19 5NF,England,-0.13862308859825134,51.56631088256836,E38000088,NHS Islington CCG,9.2342,31.8302,47.7002,11.235399999999998
 The Royal Wolverhampton NHST,RL403,New Cross Hospital,WV10 0QP,England,-2.0955405235290527,52.599727630615234,E38000210,NHS Wolverhampton CCG,18.0222,31.983,64.51480000000001,0

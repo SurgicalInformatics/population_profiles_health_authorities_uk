@@ -3,15 +3,19 @@ library(tidyverse)
 library(janitor)
 
 #read csv in
-ccp_april_26_centre_lookup = read_csv('lookup_centres/ccp_dag_id_lookup_26-April-2020.csv')
-
-#read ethnicity files
+ccp_april_26_centre_lookup = read_csv('lookup_centres/ccp_dag_id_lookup_26-April-2020.csv') %>% 
+                              mutate(ccg = ifelse(ccg == 'E38000230' & 
+                                                    (place_name == 'Derriford Hospital' |
+                                                       place_name == 'Royal Devon And Exeter Hospital (Wonford)' |
+                                                       place_name == 'Torbay Hospital') , 'E38000152', ccg),
+                                     ccg = ifelse(ccg == 'E38000230' & place_name == 'North Devon District Hospital', 'E38000129', ccg),
+                                     ccg = ifelse(ccg == 'E38000229' & place_name == 'Chesterfield Royal Hospital', 'E38000115', ccg))
 
 #For england
 eng_ethnicity_data = read_csv('ethnicity_data/england_ethnicity.csv') %>% clean_names() %>% 
   filter(indicator_name == 'Asian or Asian British ethnic group: % of population' | 
            indicator_name == 'Black and Minority Ethnic (BME) Population' | indicator_name == "Percentage of population whose ethnicity is not 'White UK'") %>% 
-  select(area_code, area_name, sex, age, time_period, indicator_name, value)
+  select(area_code, area_name, sex, age, time_period, indicator_name, value) 
 
 eng_ethnicity_data = eng_ethnicity_data %>% 
   pivot_wider(names_from = indicator_name, values_from = value) %>% 
@@ -58,7 +62,9 @@ ccp_ethnicity_centre_lookup = ccp_april_26_centre_lookup %>%
          perc_other = ifelse(country == 'Scotland', perc_other_scot, perc_other)) %>% 
   select(- perc_black_scot, - perc_white_scot, -perc_other_scot, -perc_asian_scot) %>% 
   mutate(perc_asian = ifelse(is.na(perc_asian), (100-perc_white)/2 , perc_asian),
-         perc_other = ifelse(is.na(perc_other), (100-perc_white)/2 , perc_other))
+         perc_other = ifelse(is.na(perc_other), (100-perc_white)/2 , perc_other)) %>% 
+  rename(dag_id_e = dag_id,
+         redcap_data_access_group_e = redcap_data_access_group)
 
 #write csv
 save_date = Sys.Date() %>% format('%d-%B-%Y')
