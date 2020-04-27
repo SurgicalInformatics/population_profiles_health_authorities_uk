@@ -1,6 +1,9 @@
 #
 library(tidyverse)
 library(janitor)
+library(rlang)
+
+`%ni%` = Negate(`%in%`)
 
 #read csv in
 ccp_april_26_centre_lookup = read_csv('lookup_centres/ccp_dag_id_lookup_26-April-2020.csv') %>% 
@@ -12,57 +15,64 @@ ccp_april_26_centre_lookup = read_csv('lookup_centres/ccp_dag_id_lookup_26-April
                                      ccg = ifelse(ccg == 'E38000229' & place_name == 'Chesterfield Royal Hospital', 'E38000115', ccg))
 
 #For england
-eng_ethnicity_data = read_csv('ethnicity_data/england_ethnicity.csv') %>% clean_names() %>% 
-  filter(indicator_name == 'Asian or Asian British ethnic group: % of population' | 
-           indicator_name == 'Black and Minority Ethnic (BME) Population' | indicator_name == "Percentage of population whose ethnicity is not 'White UK'") %>% 
-  select(area_code, area_name, sex, age, time_period, indicator_name, value) 
+eng_wal_ethnicity_data = read_csv('ethnicity_data/england_wales_census.csv') %>% clean_names() %>% 
+  rename(ccg = mnemonic,
+         all_people = all_usual_residents) %>% 
+  mutate(n_char_code = nchar(ccg)) %>% 
+  filter(n_char_code == 9) %>% 
+  select(-n_char_code, -area) %>% 
+  rename(white_gypsy_traveller = white_gypsy_or_irish_traveller) %>% 
+  mutate(mixed_or_multiple_ethnic_groups = mixed_multiple_ethnic_groups_white_and_black_caribbean + 
+           mixed_multiple_ethnic_groups_white_and_black_african + mixed_multiple_ethnic_groups_white_and_asian + 
+           mixed_multiple_ethnic_groups_other_mixed,
+          white = white_english_welsh_scottish_northern_irish_british + white_irish + white_gypsy_traveller + white_other_white,
+          african_caribbean = black_african_caribbean_black_british_african + black_african_caribbean_black_british_caribbean + black_african_caribbean_black_british_other_black,
+          asian_asian_british = asian_asian_british_indian + asian_asian_british_pakistani + asian_asian_british_bangladeshi + asian_asian_british_chinese + asian_asian_british_other_asian)
 
-eng_ethnicity_data = eng_ethnicity_data %>% 
-  pivot_wider(names_from = indicator_name, values_from = value) %>% 
-  clean_names() %>% 
-  mutate(perc_asian = asian_or_asian_british_ethnic_group_percent_of_population,
-         perc_black = black_and_minority_ethnic_bme_population,
-         perc_white = 100-percentage_of_population_whose_ethnicity_is_not_white_uk,
-         perc_other = 100 - (perc_asian + perc_black + perc_white),
-         perc_other = ifelse(perc_other < 0, 0, perc_other)) %>% 
-  select(area_code, area_name, perc_asian, perc_black, perc_white, perc_other)
+vars_eng_to_perc = colnames(eng_wal_ethnicity_data)[colnames(eng_wal_ethnicity_data) %ni% c('ccg', 'all_people')]
+
+perc_eng_wal_ethnicity_data = eng_wal_ethnicity_data %>% mutate_at(vars(all_of(vars_eng_to_perc)), .funs = list(perc = ~(. / all_people)*100))
 
 #for scotland 
 scotland_new_lookup_codes = read_csv('lookup_centres/scotland_hb_code_conversion.csv') 
 
 scotland_ethnicity_data = read_csv('ethnicity_data/scotland_ethnicity_2011.csv') %>% clean_names() %>% 
-                          rename(health_board_id = x1) %>% 
-                          select(health_board_id, all_people, white, asian_asian_scottish_or_asian_british, african, caribbean_or_black, other_ethnic_groups) %>% 
-                          mutate(perc_asian_scot = (asian_asian_scottish_or_asian_british / all_people)*100,
-                                 perc_black_scot = ((caribbean_or_black + african) / all_people)*100,
-                                 perc_white_scot = (white / all_people)*100,
-                                 perc_other_scot = (other_ethnic_groups / all_people)*100) %>% 
-                          select(health_board_id, perc_asian_scot, perc_white_scot, perc_black_scot, perc_other_scot) %>% 
-                          left_join(scotland_new_lookup_codes, by = c('health_board_id' = 'HB')) %>% 
-                          mutate(health_board_id = HB19) %>% 
-                          select(health_board_id, perc_asian_scot, perc_white_scot, perc_black_scot, perc_other_scot) 
-  unique(ccp_april_26_centre_lookup$redcap_data_access_group)
+                           rename(health_board_id = x1,
+                                  asian_asian_british = asian_asian_scottish_or_asian_british,
+                                  asian_asian_british_pakistani = asian_asian_scottish_or_asian_british_pakistani_pakistani_scottish_or_pakistani_british,
+                                  asian_asian_british_indian = asian_asian_scottish_or_asian_british_indian_indian_scottish_or_indian_british,
+                                  asian_asian_british_bangladeshi = asian_asian_scottish_or_asian_british_bangladeshi_bangladeshi_scottish_or_bangladeshi_british,
+                                  asian_asian_british_chinese = asian_asian_scottish_or_asian_british_chinese_chinese_scottish_or_chinese_british,
+                                  asian_asian_british_other_asian = asian_asian_scottish_or_asian_british_other_asian, 
+                                  other_ethnic_group_arab = other_ethnic_groups_arab_arab_scottish_or_arab_british,
+                                  other_ethnic_group_any_other_ethnic_group = other_ethnic_groups_other_ethnic_group) %>% 
+  mutate(white_english_welsh_scottish_northern_irish_british = white_scottish + white_other_british,
+         african_caribbean = african + caribbean_or_black)
 
+vars_scot_to_perc = colnames(scotland_ethnicity_data)[colnames(scotland_ethnicity_data) %ni% c('health_board_id', 'all_people')]
+
+as.varchar = function(x){
+  as.numeric(as.character(x))
+}
+
+scotland_ethnicity_data = scotland_ethnicity_data %>% 
+  mutate_at(c('african_other_african', 'caribbean_or_black_other_caribbean_or_black'), as.numeric)
+
+perc_scotland_ethnicity_data = scotland_ethnicity_data %>% 
+                                             mutate_at(vars(all_of(vars_scot_to_perc)), .funs = list(perc = ~(. / all_people)*100)) %>% 
+                                             left_join(scotland_new_lookup_codes, by = c('health_board_id' = 'HB')) %>% 
+                                             filter(!is.na(health_board_id)) %>% 
+                                             mutate(health_board_id = HB19) %>% 
+                                             select(-HB19) %>% 
+                                             rename(ccg = health_board_id)
+                                    
+
+#bind_rows
+perc_combined_eng_wal_sco = bind_rows(perc_scotland_ethnicity_data, perc_eng_wal_ethnicity_data)
 
 #Finally combine with DAG data
 ccp_ethnicity_centre_lookup = ccp_april_26_centre_lookup %>% 
-  left_join(eng_ethnicity_data, by = c('ccg' = 'area_code')) %>% 
-  left_join(scotland_ethnicity_data, by = c('ccg' = 'health_board_id')) %>% 
-  mutate(perc_asian = ifelse(country == 'Wales' & redcap_data_access_group == 'Cardiff and Vale University Health Board', 5.562, perc_asian),
-         perc_black = ifelse(country == 'Wales' & redcap_data_access_group == 'Cardiff and Vale University Health Board', 1.665, perc_black),
-         perc_white = ifelse(country == 'Wales' & redcap_data_access_group == 'Cardiff and Vale University Health Board', 88.845, perc_white),
-         perc_other = ifelse(country == 'Wales' & redcap_data_access_group == 'Cardiff and Vale University Health Board', 3.8965, perc_other),
-         perc_asian = ifelse(country == 'Wales' & redcap_data_access_group != 'Cardiff and Vale University Health Board', 1.2767, perc_asian),
-         perc_black = ifelse(country == 'Wales' & redcap_data_access_group != 'Cardiff and Vale University Health Board', 0.4882, perc_black),
-         perc_white = ifelse(country == 'Wales' & redcap_data_access_group != 'Cardiff and Vale University Health Board', 96.7669, perc_white),
-         perc_other = ifelse(country == 'Wales' & redcap_data_access_group != 'Cardiff and Vale University Health Board', 1.47572, perc_other)) %>% 
-  mutate(perc_asian = ifelse(country == 'Scotland', perc_asian_scot, perc_asian),
-         perc_black = ifelse(country == 'Scotland', perc_black_scot, perc_black),
-         perc_white = ifelse(country == 'Scotland', perc_white_scot, perc_white),
-         perc_other = ifelse(country == 'Scotland', perc_other_scot, perc_other)) %>% 
-  select(- perc_black_scot, - perc_white_scot, -perc_other_scot, -perc_asian_scot) %>% 
-  mutate(perc_asian = ifelse(is.na(perc_asian), (100-perc_white)/2 , perc_asian),
-         perc_other = ifelse(is.na(perc_other), (100-perc_white)/2 , perc_other)) %>% 
+  left_join(perc_combined_eng_wal_sco, by = c('ccg' = 'ccg')) %>% 
   rename(dag_id_e = dag_id,
          redcap_data_access_group_e = redcap_data_access_group)
 
