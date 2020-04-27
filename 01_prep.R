@@ -70,11 +70,34 @@ perc_scotland_ethnicity_data = scotland_ethnicity_data %>%
 #bind_rows
 perc_combined_eng_wal_sco = bind_rows(perc_scotland_ethnicity_data, perc_eng_wal_ethnicity_data)
 
+
+#Now update boundary changes between CCGs 2019 and census
+perc_combined_eng_wal_sco = perc_combined_eng_wal_sco %>% 
+  mutate(ccg = ifelse(ccg == 'W11000026', 'W11000030', ccg),
+         ccg = ifelse(ccg == 'W11000027', 'W11000031', ccg))#,
+         # ccg = ifelse(ccg == 'E38000217', '', ccg),
+         # ccg = ifelse(ccg == 'E38000222', '', ccg),
+         # ccg = ifelse(ccg == 'E38000229', '', ccg),
+         # ccg = ifelse(ccg == 'E38000215', '', ccg),
+         # ccg = ifelse(ccg == 'E38000227', '', ccg),
+         # ccg = ifelse(ccg == 'E38000220', '', ccg),
+         # ccg = ifelse(ccg == 'E38000214', '', ccg),
+         # ccg = ifelse(ccg == 'E38000224', '', ccg),
+         # ccg = ifelse(ccg == 'E38000221', '', ccg),
+         # ccg = ifelse(ccg == 'E38000219', '', ccg),
+         # ccg = ifelse(ccg == 'E38000212', '', ccg),
+         # ccg = ifelse(ccg == 'E38000225', '', ccg),
+         # ccg = ifelse(ccg == 'E38000228', '', ccg),
+         # ccg = ifelse(ccg == 'E38000223', '', ccg),
+         # ccg = ifelse(ccg == 'E38000213', '', ccg))
+
 #Finally combine with DAG data
 ccp_ethnicity_centre_lookup = ccp_april_26_centre_lookup %>% 
   left_join(perc_combined_eng_wal_sco, by = c('ccg' = 'ccg')) %>% 
   rename(dag_id_e = dag_id,
          redcap_data_access_group_e = redcap_data_access_group)
+
+ccp_ethnicity_centre_lookup %>% filter(is.na(white_english_welsh_scottish_northern_irish_british_perc)) %>% select(place_name, ccg) %>% distinct(ccg, .keep_all = T)
 
 #write csv
 save_date = Sys.Date() %>% format('%d-%B-%Y')
