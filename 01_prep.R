@@ -1,4 +1,4 @@
-#
+#April 2020, Surgical Informatics, Tom Drake. Uses NHS data and census data (scottish and an England / Wales custom query through nomis) to identify ethnicity by CCG/HB area
 library(tidyverse)
 library(janitor)
 library(rlang)
@@ -31,10 +31,29 @@ eng_wal_ethnicity_data = read_csv('ethnicity_data/england_wales_census.csv') %>%
 
 vars_eng_to_perc = colnames(eng_wal_ethnicity_data)[colnames(eng_wal_ethnicity_data) %ni% c('ccg', 'all_people')]
 
-perc_eng_wal_ethnicity_data = eng_wal_ethnicity_data %>% mutate_at(vars(all_of(vars_eng_to_perc)), .funs = list(perc = ~(. / all_people)*100))
+#Now update estimates for 2018
+#update population numbers
+#https://www.nrscotland.gov.uk/statistics-and-data/statistics/statistics-by-theme/population/population-estimates/mid-year-population-estimates/mid-2018
+#https://statswales.gov.wales/Catalogue/Population-and-Migration/Population/Estimates/Local-Health-Boards/populationestimates-by-lhb-age
+#https://www.ons.gov.uk/peoplepopulationandcommunity/populationandmigration/populationestimates/datasets/clinicalcommissioninggroupmidyearpopulationestimates
+scotland_new_lookup_codes = read_csv('lookup_centres/scotland_hb_code_conversion.csv') %>% mutate(-Country)
+
+mid_2018_estimates = read_csv('updated_population_estimates/SAPE21DT5_mid2018_pop_estimates.csv') %>% clean_names() %>% #includes scottish and welsh estimates
+  rename(ccg = area_codes,
+         ccg_name = area_names,
+         updated_all_age_mid_2018 = all_ages) %>% 
+  left_join(scotland_new_lookup_codes, by = c('ccg' = 'HB')) %>% 
+  mutate(ccg = ifelse(!is.na(HB19), HB19, ccg))
+
+eng_wal_ethnicity_data = eng_wal_ethnicity_data %>% left_join(mid_2018_estimates, by = 'ccg') %>% mutate(multiplication_factor = updated_all_age_mid_2018 / all_people)
+
+update_numbers_eng_wal_ethnicity_data = eng_wal_ethnicity_data %>% mutate_at(vars(all_of(c('all_people', vars_eng_to_perc))),  ~(. *multiplication_factor))
+
+perc_eng_wal_ethnicity_data = update_numbers_eng_wal_ethnicity_data %>% mutate_at(vars(all_of(vars_eng_to_perc)), .funs = list(perc = ~(. / all_people)*100))
+
+#perc_eng_wal_ethnicity_data = eng_wal_ethnicity_data %>% mutate_at(vars(all_of(vars_eng_to_perc)), .funs = list(perc = ~(. / all_people)*100))
 
 #for scotland 
-scotland_new_lookup_codes = read_csv('lookup_centres/scotland_hb_code_conversion.csv') 
 
 scotland_ethnicity_data = read_csv('ethnicity_data/scotland_ethnicity_2011.csv') %>% clean_names() %>% 
                            rename(health_board_id = x1,
@@ -58,24 +77,40 @@ as.varchar = function(x){
 scotland_ethnicity_data = scotland_ethnicity_data %>% 
   mutate_at(c('african_other_african', 'caribbean_or_black_other_caribbean_or_black'), as.numeric)
 
-perc_scotland_ethnicity_data = scotland_ethnicity_data %>% 
-                                             mutate_at(vars(all_of(vars_scot_to_perc)), .funs = list(perc = ~(. / all_people)*100)) %>% 
-                                             left_join(scotland_new_lookup_codes, by = c('health_board_id' = 'HB')) %>% 
-                                             filter(!is.na(health_board_id)) %>% 
-                                             mutate(health_board_id = HB19) %>% 
-                                             select(-HB19) %>% 
+scotland_ethnicity_data = scotland_ethnicity_data %>% 
+                          left_join(scotland_new_lookup_codes, by = c('health_board_id' = 'HB')) %>%
+                          mutate(health_board_id = HB19) %>% 
+                          select(-HB19, -HBName, -Country) %>% 
+                          left_join(mid_2018_estimates, by = c('health_board_id' = 'ccg')) %>% mutate(multiplication_factor = updated_all_age_mid_2018 / all_people) %>% 
+                          select(-HB19, -HBName, -Country)
+  
+
+update_numbers_scotland_ethnicity_data = scotland_ethnicity_data %>% mutate_at(vars(all_of(c('all_people', vars_scot_to_perc))),  ~(. *multiplication_factor))
+
+perc_scotland_ethnicity_data = update_numbers_scotland_ethnicity_data %>%
+                                             mutate_at(vars(all_of(vars_scot_to_perc)), .funs = list(perc = ~(. / all_people)*100)) %>%
+                                             filter(!is.na(health_board_id)) %>%
                                              rename(ccg = health_board_id)
-                                    
+
+# perc_scotland_ethnicity_data = scotland_ethnicity_data %>% 
+#                                              mutate_at(vars(all_of(vars_scot_to_perc)), .funs = list(perc = ~(. / all_people)*100)) %>% 
+#                                              left_join(scotland_new_lookup_codes, by = c('health_board_id' = 'HB')) %>% 
+#                                              filter(!is.na(health_board_id)) %>% 
+#                                              mutate(health_board_id = HB19) %>% 
+#                                              select(-HB19) %>% 
+#                                              rename(ccg = health_board_id)
+#                                     
 
 #bind_rows
 perc_combined_eng_wal_sco = bind_rows(perc_scotland_ethnicity_data, perc_eng_wal_ethnicity_data)
 
 
 #Now update boundary changes between CCGs 2019 and census
+#make census ccgs equal to the ccgs 2019
 perc_combined_eng_wal_sco = perc_combined_eng_wal_sco %>% 
   mutate(ccg = ifelse(ccg == 'W11000026', 'W11000030', ccg),
          ccg = ifelse(ccg == 'W11000027', 'W11000031', ccg))#,
-         # ccg = ifelse(ccg == 'E38000217', '', ccg),
+         # ccg = ifelse(ccg == 'E38000217', 'E38000123', ccg))#
          # ccg = ifelse(ccg == 'E38000222', '', ccg),
          # ccg = ifelse(ccg == 'E38000229', '', ccg),
          # ccg = ifelse(ccg == 'E38000215', '', ccg),
@@ -97,7 +132,15 @@ ccp_ethnicity_centre_lookup = ccp_april_26_centre_lookup %>%
   rename(dag_id_e = dag_id,
          redcap_data_access_group_e = redcap_data_access_group)
 
-ccp_ethnicity_centre_lookup %>% filter(is.na(white_english_welsh_scottish_northern_irish_british_perc)) %>% select(place_name, ccg) %>% distinct(ccg, .keep_all = T)
+#Now make White, Asian, Black and ME proportions
+ccp_ethnicity_centre_lookup = ccp_ethnicity_centre_lookup %>% 
+  mutate(white_perc_out = white_perc,
+         asian_perc_out = asian_asian_british_perc,
+         black_perc_out = african_caribbean_perc,
+         minority_ethnic_out = other_ethnic_group_any_other_ethnic_group_perc + other_ethnic_group_arab_perc + mixed_or_multiple_ethnic_groups_perc,
+         check_val = white_perc_out + asian_perc_out + black_perc_out + minority_ethnic_out)
+
+#ccp_ethnicity_centre_lookup %>% filter(is.na(white_english_welsh_scottish_northern_irish_british_perc)) %>% select(place_name, ccg) %>% distinct(ccg, .keep_all = T)
 
 #write csv
 save_date = Sys.Date() %>% format('%d-%B-%Y')
