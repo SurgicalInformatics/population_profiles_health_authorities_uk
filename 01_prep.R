@@ -6,7 +6,7 @@ library(rlang)
 `%ni%` = Negate(`%in%`)
 
 #read csv in
-ccp_april_26_centre_lookup = read_csv('lookup_centres/ccp_dag_id_lookup_26-April-2020.csv') %>% 
+ccp_april_26_centre_lookup = read_csv('lookup_centres/ccp_dag_id_lookup_29-April-2020.csv') %>% 
                               mutate(ccg = ifelse(ccg == 'E38000230' & 
                                                     (place_name == 'Derriford Hospital' |
                                                        place_name == 'Royal Devon And Exeter Hospital (Wonford)' |
@@ -36,7 +36,7 @@ vars_eng_to_perc = colnames(eng_wal_ethnicity_data)[colnames(eng_wal_ethnicity_d
 #https://www.nrscotland.gov.uk/statistics-and-data/statistics/statistics-by-theme/population/population-estimates/mid-year-population-estimates/mid-2018
 #https://statswales.gov.wales/Catalogue/Population-and-Migration/Population/Estimates/Local-Health-Boards/populationestimates-by-lhb-age
 #https://www.ons.gov.uk/peoplepopulationandcommunity/populationandmigration/populationestimates/datasets/clinicalcommissioninggroupmidyearpopulationestimates
-scotland_new_lookup_codes = read_csv('lookup_centres/scotland_hb_code_conversion.csv') %>% mutate(-Country)
+scotland_new_lookup_codes = read_csv('lookup_centres/scotland_hb_code_conversion.csv') %>% select(-Country)
 
 mid_2018_estimates = read_csv('updated_population_estimates/SAPE21DT5_mid2018_pop_estimates.csv') %>% clean_names() %>% #includes scottish and welsh estimates
   rename(ccg = area_codes,
@@ -44,6 +44,54 @@ mid_2018_estimates = read_csv('updated_population_estimates/SAPE21DT5_mid2018_po
          updated_all_age_mid_2018 = all_ages) %>% 
   left_join(scotland_new_lookup_codes, by = c('ccg' = 'HB')) %>% 
   mutate(ccg = ifelse(!is.na(HB19), HB19, ccg))
+
+#Lets merge the CCGs
+#make census ccgs equal to the ccgs 2019
+eng_wal_ethnicity_data = eng_wal_ethnicity_data %>% 
+  mutate(ccg = ifelse(ccg == 'E38000032', 'E38000217', ccg),
+         ccg = ifelse(ccg == 'E38000123', 'E38000217', ccg),
+        ccg = ifelse(ccg == 'E38000158', 'E38000217', ccg),
+        ccg = ifelse(ccg == 'E38000060', 'E38000226', ccg),
+        ccg = ifelse(ccg == 'E38000065', 'E38000227', ccg),
+        ccg = ifelse(ccg == 'E38000093', 'E38000228', ccg),
+        ccg = ifelse(ccg == 'E38000041', 'E38000215', ccg),
+        ccg = ifelse(ccg == 'E38000061', 'E38000212', ccg),
+        ccg = ifelse(ccg == 'E38000111', 'E38000212', ccg),
+        ccg = ifelse(ccg == 'E38000112', 'E38000212', ccg),
+        ccg = ifelse(ccg == 'E38000094', 'E38000225', ccg),
+        ccg = ifelse(ccg == 'E38000095', 'E38000225', ccg),
+        ccg = ifelse(ccg == 'E38000096', 'E38000225', ccg),
+        ccg = ifelse(ccg == 'E38000012', 'E38000220', ccg),
+        ccg = ifelse(ccg == 'E38000013', 'E38000220', ccg),
+        ccg = ifelse(ccg == 'E38000149', 'E38000220', ccg),
+        ccg = ifelse(ccg == 'E38000213', 'E38000213', ccg),#changes in april 2020
+        ccg = ifelse(ccg == 'E38000058', 'E38000229', ccg),
+        ccg = ifelse(ccg == 'E38000071', 'E38000229', ccg),
+        ccg = ifelse(ccg == 'E38000115', 'E38000229', ccg),
+        ccg = ifelse(ccg == 'E38000169', 'E38000229', ccg),
+        ccg = ifelse(ccg == 'E38000131', 'E38000218', ccg),
+        ccg = ifelse(ccg == 'E38000159', 'E38000219', ccg),
+        ccg = ifelse(ccg == 'E38000022', 'E38000222', ccg),
+        ccg = ifelse(ccg == 'E38000125', 'E38000222', ccg),
+        ccg = ifelse(ccg == 'E38000155', 'E38000222', ccg),
+        ccg = ifelse(ccg == 'E38000129', 'E38000230', ccg),
+        ccg = ifelse(ccg == 'E38000152', 'E38000230', ccg),
+        ccg = ifelse(ccg == 'E38000036', 'E38000213', ccg),#changes in april 2020
+        ccg = ifelse(ccg == 'E38000067', 'E38000214', ccg),#changes in april 2020
+        ccg = ifelse(ccg == 'E38000003', 'E38000223', ccg),
+        ccg = ifelse(ccg == 'E38000017', 'E38000224', ccg),
+        ccg = ifelse(ccg == 'E38000033', 'E38000223', ccg),
+        ccg = ifelse(ccg == 'E38000110', 'E38000221', ccg),
+        ccg = ifelse(ccg == 'E38000114', 'E38000221', ccg),
+        ccg = ifelse(ccg == 'E38000148', 'E38000224', ccg),
+        ccg = ifelse(ccg == 'E38000160', 'E38000221', ccg),
+        ccg = ifelse(ccg == 'E38000207', 'E38000224', ccg),
+        ccg = ifelse(ccg == 'E38000209', 'E38000221', ccg),
+        ccg = ifelse(ccg == 'W11000026', 'W11000031', ccg),
+        ccg = ifelse(ccg == 'W11000027', 'W11000030', ccg)) %>% 
+  group_by(ccg) %>% 
+  mutate_at(vars(-ccg), sum) %>% 
+  distinct(ccg, .keep_all = T)
 
 eng_wal_ethnicity_data = eng_wal_ethnicity_data %>% left_join(mid_2018_estimates, by = 'ccg') %>% mutate(multiplication_factor = updated_all_age_mid_2018 / all_people)
 
@@ -80,9 +128,9 @@ scotland_ethnicity_data = scotland_ethnicity_data %>%
 scotland_ethnicity_data = scotland_ethnicity_data %>% 
                           left_join(scotland_new_lookup_codes, by = c('health_board_id' = 'HB')) %>%
                           mutate(health_board_id = HB19) %>% 
-                          select(-HB19, -HBName, -Country) %>% 
+                          select(-HB19, -HBName) %>% 
                           left_join(mid_2018_estimates, by = c('health_board_id' = 'ccg')) %>% mutate(multiplication_factor = updated_all_age_mid_2018 / all_people) %>% 
-                          select(-HB19, -HBName, -Country)
+                          select(-HB19, -HBName)
   
 
 update_numbers_scotland_ethnicity_data = scotland_ethnicity_data %>% mutate_at(vars(all_of(c('all_people', vars_scot_to_perc))),  ~(. *multiplication_factor))
@@ -104,28 +152,6 @@ perc_scotland_ethnicity_data = update_numbers_scotland_ethnicity_data %>%
 #bind_rows
 perc_combined_eng_wal_sco = bind_rows(perc_scotland_ethnicity_data, perc_eng_wal_ethnicity_data)
 
-
-#Now update boundary changes between CCGs 2019 and census
-#make census ccgs equal to the ccgs 2019
-perc_combined_eng_wal_sco = perc_combined_eng_wal_sco %>% 
-  mutate(ccg = ifelse(ccg == 'W11000026', 'W11000030', ccg),
-         ccg = ifelse(ccg == 'W11000027', 'W11000031', ccg))#,
-         # ccg = ifelse(ccg == 'E38000217', 'E38000123', ccg))#
-         # ccg = ifelse(ccg == 'E38000222', '', ccg),
-         # ccg = ifelse(ccg == 'E38000229', '', ccg),
-         # ccg = ifelse(ccg == 'E38000215', '', ccg),
-         # ccg = ifelse(ccg == 'E38000227', '', ccg),
-         # ccg = ifelse(ccg == 'E38000220', '', ccg),
-         # ccg = ifelse(ccg == 'E38000214', '', ccg),
-         # ccg = ifelse(ccg == 'E38000224', '', ccg),
-         # ccg = ifelse(ccg == 'E38000221', '', ccg),
-         # ccg = ifelse(ccg == 'E38000219', '', ccg),
-         # ccg = ifelse(ccg == 'E38000212', '', ccg),
-         # ccg = ifelse(ccg == 'E38000225', '', ccg),
-         # ccg = ifelse(ccg == 'E38000228', '', ccg),
-         # ccg = ifelse(ccg == 'E38000223', '', ccg),
-         # ccg = ifelse(ccg == 'E38000213', '', ccg))
-
 #Finally combine with DAG data
 ccp_ethnicity_centre_lookup = ccp_april_26_centre_lookup %>% 
   left_join(perc_combined_eng_wal_sco, by = c('ccg' = 'ccg')) %>% 
@@ -138,7 +164,7 @@ ccp_ethnicity_centre_lookup = ccp_ethnicity_centre_lookup %>%
          asian_perc_out = asian_asian_british_perc,
          black_perc_out = african_caribbean_perc,
          minority_ethnic_out = other_ethnic_group_any_other_ethnic_group_perc + other_ethnic_group_arab_perc + mixed_or_multiple_ethnic_groups_perc,
-         check_val = white_perc_out + asian_perc_out + black_perc_out + minority_ethnic_out)
+         check_val = white_perc_out + asian_perc_out + black_perc_out + minority_ethnic_out) %>% distinct(dag_id_e, .keep_all = T)
 
 #ccp_ethnicity_centre_lookup %>% filter(is.na(white_english_welsh_scottish_northern_irish_british_perc)) %>% select(place_name, ccg) %>% distinct(ccg, .keep_all = T)
 
