@@ -6,14 +6,14 @@ library(rlang)
 `%ni%` = Negate(`%in%`)
 
 #read csv in
-ccp_april_26_centre_lookup = read_csv('lookup_centres/ccp_dag_id_lookup_29-April-2020.csv') %>% 
-                              mutate(ccg = ifelse(ccg == 'E38000230' & 
-                                                    (place_name == 'Derriford Hospital' |
-                                                       place_name == 'Royal Devon And Exeter Hospital (Wonford)' |
-                                                       place_name == 'Torbay Hospital') , 'E38000152', ccg),
-                                     ccg = ifelse(ccg == 'E38000230' & place_name == 'North Devon District Hospital', 'E38000129', ccg),
-                                     ccg = ifelse(ccg == 'E38000229' & place_name == 'Chesterfield Royal Hospital', 'E38000115', ccg))
-
+ccp_april_26_centre_lookup = read_csv('lookup_centres/ccp_dag_id_lookup_29-April-2020.csv') #%>% 
+                              # mutate(ccg = ifelse(ccg == 'E38000230' & 
+                              #                       (place_name == 'Derriford Hospital' |
+                              #                          place_name == 'Royal Devon And Exeter Hospital (Wonford)' |
+                              #                          place_name == 'Torbay Hospital') , 'E38000152', ccg),
+                              #        ccg = ifelse(ccg == 'E38000230' & place_name == 'North Devon District Hospital', 'E38000129', ccg),
+                              #        ccg = ifelse(ccg == 'E38000229' & place_name == 'Chesterfield Royal Hospital', 'E38000115', ccg))
+                              
 #For england
 eng_wal_ethnicity_data = read_csv('ethnicity_data/england_wales_census.csv') %>% clean_names() %>% 
   rename(ccg = mnemonic,
@@ -87,6 +87,11 @@ eng_wal_ethnicity_data = eng_wal_ethnicity_data %>%
         ccg = ifelse(ccg == 'E38000160', 'E38000221', ccg),
         ccg = ifelse(ccg == 'E38000207', 'E38000224', ccg),
         ccg = ifelse(ccg == 'E38000209', 'E38000221', ccg),
+        ccg = ifelse(ccg == 'E38000058', 'E38000229', ccg),
+        ccg = ifelse(ccg == 'E38000071', 'E38000229', ccg),
+        ccg = ifelse(ccg == 'E38000115', 'E38000229', ccg),
+        ccg = ifelse(ccg == 'E38000169', 'E38000229', ccg),
+        ccg = ifelse(ccg == 'E38000129', 'E38000230', ccg),
         ccg = ifelse(ccg == 'W11000026', 'W11000031', ccg),
         ccg = ifelse(ccg == 'W11000027', 'W11000030', ccg)) %>% 
   group_by(ccg) %>% 
@@ -166,7 +171,7 @@ ccp_ethnicity_centre_lookup = ccp_ethnicity_centre_lookup %>%
          minority_ethnic_out = other_ethnic_group_any_other_ethnic_group_perc + other_ethnic_group_arab_perc + mixed_or_multiple_ethnic_groups_perc,
          check_val = white_perc_out + asian_perc_out + black_perc_out + minority_ethnic_out) %>% distinct(dag_id_e, .keep_all = T)
 
-#ccp_ethnicity_centre_lookup %>% filter(is.na(white_english_welsh_scottish_northern_irish_british_perc)) %>% select(place_name, ccg) %>% distinct(ccg, .keep_all = T)
+ccp_ethnicity_centre_lookup %>% filter(is.na(white_english_welsh_scottish_northern_irish_british_perc)) %>% select(place_name, ccg) %>% distinct(ccg, .keep_all = T)
 
 #write csv
 save_date = Sys.Date() %>% format('%d-%B-%Y')
