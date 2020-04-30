@@ -6,7 +6,7 @@ library(rlang)
 `%ni%` = Negate(`%in%`)
 
 #read csv in
-ccp_april_26_centre_lookup = read_csv('lookup_centres/ccp_dag_id_lookup_29-April-2020.csv') #%>% 
+ccp_from_location_centre_lookup = read_csv('lookup_centres/ccp_dag_id_lookup_30-April-2020.csv') #%>% 
                               # mutate(ccg = ifelse(ccg == 'E38000230' & 
                               #                       (place_name == 'Derriford Hospital' |
                               #                          place_name == 'Royal Devon And Exeter Hospital (Wonford)' |
@@ -158,7 +158,7 @@ perc_scotland_ethnicity_data = update_numbers_scotland_ethnicity_data %>%
 perc_combined_eng_wal_sco = bind_rows(perc_scotland_ethnicity_data, perc_eng_wal_ethnicity_data)
 
 #Finally combine with DAG data
-ccp_ethnicity_centre_lookup = ccp_april_26_centre_lookup %>% 
+ccp_ethnicity_centre_lookup = ccp_from_location_centre_lookup %>% 
   left_join(perc_combined_eng_wal_sco, by = c('ccg' = 'ccg')) %>% 
   rename(dag_id_e = dag_id,
          redcap_data_access_group_e = redcap_data_access_group)
