@@ -6,7 +6,7 @@ library(rlang)
 `%ni%` = Negate(`%in%`)
 
 #read csv in
-ccp_from_location_centre_lookup = read_csv('lookup_centres/ccp_dag_id_lookup_30-April-2020.csv') #%>% 
+ccp_from_location_centre_lookup = read_csv('lookup_centres/ccp_dag_id_lookup_05-May-2020.csv') #%>% 
                               # mutate(ccg = ifelse(ccg == 'E38000230' & 
                               #                       (place_name == 'Derriford Hospital' |
                               #                          place_name == 'Royal Devon And Exeter Hospital (Wonford)' |
@@ -171,7 +171,7 @@ ccp_ethnicity_centre_lookup = ccp_ethnicity_centre_lookup %>%
          minority_ethnic_out = other_ethnic_group_any_other_ethnic_group_perc + other_ethnic_group_arab_perc + mixed_or_multiple_ethnic_groups_perc,
          check_val = white_perc_out + asian_perc_out + black_perc_out + minority_ethnic_out) %>% distinct(dag_id_e, .keep_all = T)
 
-ccp_ethnicity_centre_lookup %>% filter(is.na(white_english_welsh_scottish_northern_irish_british_perc)) %>% select(place_name, ccg) %>% distinct(ccg, .keep_all = T)
+#ccp_ethnicity_centre_lookup %>% filter(is.na(white_english_welsh_scottish_northern_irish_british_perc)) %>% select(place_name, ccg) %>% distinct(ccg, .keep_all = T)
 
 #write csv
 save_date = Sys.Date() %>% format('%d-%B-%Y')
