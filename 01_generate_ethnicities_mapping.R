@@ -264,3 +264,4 @@ ccp_ethnicity_centre_lookup = ccp_ethnicity_centre_lookup %>%
 save_date = Sys.Date() %>% format('%d-%B-%Y')
 
 write_csv(ccp_ethnicity_centre_lookup, paste0('data_out_ccp_lookup_with_population_level_estimate/ccp_ethnicity_out_', save_date, '.csv'))
+write_csv(ccp_ethnicity_centre_lookup, paste0('data_out_ccp_lookup_with_population_level_estimate/ccp_ethnicity_out.csv'))
