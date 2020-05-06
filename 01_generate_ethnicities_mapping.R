@@ -6,7 +6,7 @@ library(rlang)
 `%ni%` = Negate(`%in%`)
 
 #read csv in
-ccp_from_location_centre_lookup = read_csv('lookup_centres/ccp_dag_id_lookup_05-May-2020.csv') #%>% 
+ccp_from_location_centre_lookup = read_csv('data_in_ccp_location_lookup/ccp_dag_id_lookup_06-May-2020.csv') #%>% 
                               # mutate(ccg = ifelse(ccg == 'E38000230' & 
                               #                       (place_name == 'Derriford Hospital' |
                               #                          place_name == 'Royal Devon And Exeter Hospital (Wonford)' |
@@ -173,7 +173,94 @@ ccp_ethnicity_centre_lookup = ccp_ethnicity_centre_lookup %>%
 
 #ccp_ethnicity_centre_lookup %>% filter(is.na(white_english_welsh_scottish_northern_irish_british_perc)) %>% select(place_name, ccg) %>% distinct(ccg, .keep_all = T)
 
+#Finally, map IMD scores on
+
+#IMDs
+england_imd_19 = read_csv('imd_lookups/imd_lookup_england_2019.csv')
+wales_imd_19 = read_csv('imd_lookups/imd_lookup_wales_2019.csv')
+scotland_imd_20 = read_csv('imd_lookups/imd_lookup_scotland_2020.csv')
+ni_imd_17 = read_csv('imd_lookups/nimdm_2017.csv')
+
+#Data zones/ LSOAs
+scotland_datazones = read_csv('imd_lookups/scottish_data_areas.csv')
+england_lsoas = read_csv('imd_lookups/england_lsoa_to_ccg.csv') %>% clean_names()
+ni_sa_to_lgd = readxl::read_xls('imd_lookups/ni_sa_to_lgd.xls')
+ni_soa_to_hsct = read_csv('imd_lookups/soa_to_hsct_ni.csv')
+wales_hb_names = read_csv('imd_lookups/wales_hb_names.csv')
+
+#To get wales (no direct linkages across lsoa and HB)
+#This is derived from all postcodes of the UK https://geoportal.statistics.gov.uk/datasets/national-statistics-postcode-lookup-february-2020
+#Needs unzipped into imd_lookups folder
+#wales_lsoa_lookup = read_csv('imd_lookups/Data/NSPL_FEB_2020_UK.csv') %>%  filter(startsWith(lsoa11, 'W')) %>% select(lsoa11, ccg, hlthau)
+# write_csv(wales_lsoa_lookup, 'imd_lookups/wales_lsoa_to_hb.csv')
+wales_lsoa_lookup = read_csv('imd_lookups/wales_lsoa_to_hb.csv')
+
+wales_imd = wales_imd_19 %>% 
+  left_join(wales_lsoa_lookup, by = c('lsoa11cd' = 'lsoa11')) %>% 
+  group_by(hlthau) %>% 
+  mutate(wa_average_imd = median(wimd_2019)) %>% 
+  ungroup() %>% 
+  left_join(wales_hb_names, by = c('hlthau' = 'LHB19CD')) %>% 
+  distinct(hlthau, .keep_all = T) %>% 
+  select(hlthau, LHB19NM, wa_average_imd) %>% 
+  arrange(desc(wa_average_imd)) %>% 
+  mutate(wales_average_imd_rank = 1:n()) %>% 
+  select(-wa_average_imd) 
+
+#make ni lookup
+ni_imd = ni_soa_to_hsct %>% 
+  left_join(ni_sa_to_lgd, by = c('SOA' = 'SOA2001')) %>% 
+  left_join(ni_imd_17, by = c('LGD2014' = 'LGD2014code')) %>% 
+  group_by(HSCT) %>% 
+  mutate(avg_income_per_hsct = median(Income_perc)) %>%  #done on income alone!!!
+  distinct(HSCT, .keep_all = T) %>% 
+  select(HSCT, avg_income_per_hsct) %>% 
+  filter(!is.na(HSCT)) %>% 
+  ungroup() %>% 
+  arrange(desc(avg_income_per_hsct)) %>% 
+  mutate(ni_average_imd_rank = 1:n()) %>% 
+  select(-avg_income_per_hsct) %>% 
+  mutate(HSCT = ifelse(HSCT == 'Western HSCT', 'WHSCT', HSCT),
+         HSCT = ifelse(HSCT == 'Southern HSCT', 'SHSCT', HSCT),
+         HSCT = ifelse(HSCT == 'South Eastern HSCT', 'SEHSCT', HSCT),
+         HSCT = ifelse(HSCT == 'Belfast HSCT', 'BHSCT', HSCT),
+         HSCT = ifelse(HSCT == 'Northern HSCT', 'NHSCT', HSCT))# This is v. generalised and not enough data granularity
+
+#Build big lookups
+scotland_imd_20 %>% 
+  rename(DataZone = Data_Zone) %>% 
+  left_join(scotland_datazones, by = 'DataZone') -> scotland_imd_lookup
+
+england_imd_19 %>% 
+  left_join(england_lsoas, by = c('ccg19cd' = 'ccg18cd')) -> england_ccg_imd_lookup
+
+#group_by and select most useful things
+
+scotland_imd_lookup %>% 
+  select(HB, DataZone, SIMD2020_Rank) %>% 
+  group_by(HB) %>% 
+  mutate(average_imd_rank = median(SIMD2020_Rank)) %>% 
+  select(-SIMD2020_Rank, -DataZone) %>% 
+  distinct(HB, .keep_all = T) %>% 
+  ungroup() %>% 
+  arrange(-desc(average_imd_rank)) %>% 
+  mutate(scotland_average_imd_rank = 1:n()) %>% 
+  select(-average_imd_rank) -> scotland_hb_imd
+
+england_ccg_imd_lookup %>% 
+  select(ccg19cd, RAvgRank) %>% 
+  rename(average_imd_rank = RAvgRank) %>% 
+  distinct(ccg19cd, .keep_all = T)  -> england_ccg_imd
+
+#now map these to redcap dataset
+ccp_ethnicity_centre_lookup = ccp_ethnicity_centre_lookup %>% 
+  left_join(scotland_hb_imd, by = c('ccg' = 'HB')) %>% 
+  left_join(england_ccg_imd,  by = c('ccg' = 'ccg19cd')) %>% 
+  left_join(wales_imd,  by = c('ccg' = 'hlthau')) %>% 
+  mutate(average_imd_rank = ifelse(country == 'Scotland', scotland_average_imd_rank, average_imd_rank),
+         average_imd_rank = ifelse(country == 'Wales', wales_average_imd_rank, average_imd_rank)) %>% select(-LHB19NM, -check_val)
+
 #write csv
 save_date = Sys.Date() %>% format('%d-%B-%Y')
 
-write_csv(ccp_ethnicity_centre_lookup, paste0('ccp_ethnicity_out_', save_date, '.csv'))
+write_csv(ccp_ethnicity_centre_lookup, paste0('data_out_ccp_lookup_with_population_level_estimate/ccp_ethnicity_out_', save_date, '.csv'))
