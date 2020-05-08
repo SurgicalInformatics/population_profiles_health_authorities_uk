@@ -1,4 +1,4 @@
-COVID19 Clinical Information Network (CO-CIN) / ISARIC-4C data pull and preparation
+COVID19 Clinical Information Network (CO-CIN) / ISARIC-4C population profile to hospital mapping
 ==========
 
 * [ISARIC COVID-19 Clincial Research Resources](https://isaric.tghn.org/covid-19-clinical-research-resources/)
@@ -14,8 +14,6 @@ These are patient-level data that contain disclosive information. Only use in a 
 ### Always check the data
 
 It is the end-users responsibility to understand the processes contained in these scripts, the assumptions that are used, and to check the data created conforms to their expectations. 
-
-It should be apparent therefore that there are multiple rows of data per patient across multiple arms, events and repeating instruments. Care needs to be taken when aggregating data across events, i.e. has the patient been in ICU on any particular day.  
 
 ### Set environment variable with REDCap API token
 
