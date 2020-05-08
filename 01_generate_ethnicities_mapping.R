@@ -6,7 +6,7 @@ library(rlang)
 `%ni%` = Negate(`%in%`)
 
 #read csv in
-ccp_from_location_centre_lookup = read_csv('data_in_ccp_location_lookup/ccp_dag_id_lookup_06-May-2020.csv') #%>% 
+ccp_from_location_centre_lookup = read_csv('https://raw.githubusercontent.com/SurgicalInformatics/ccp_location_lookups/master/data_out_ccp_lookups/ccp_dag_id_lookup.csv') #%>% 
                               # mutate(ccg = ifelse(ccg == 'E38000230' & 
                               #                       (place_name == 'Derriford Hospital' |
                               #                          place_name == 'Royal Devon And Exeter Hospital (Wonford)' |
@@ -260,8 +260,75 @@ ccp_ethnicity_centre_lookup = ccp_ethnicity_centre_lookup %>%
   mutate(average_imd_rank = ifelse(country == 'Scotland', scotland_average_imd_rank, average_imd_rank),
          average_imd_rank = ifelse(country == 'Wales', wales_average_imd_rank, average_imd_rank)) %>% select(-LHB19NM, -check_val)
 
+#map on the IMD15 calculations
+imd_update_15 = read_csv('imd_lookups/lookup_hospital_imd_england.csv')
+
+#Create a lookup for incorrectly entered ods codes
+incorrect_ods_postcode_mapping = ccp_ethnicity_centre_lookup %>% 
+  select(postcode, dag_id_e, lat, lon) %>% 
+  mutate(lat = round(lat, digits = 2),
+         lon = round(lon, digits = 2)) %>% arrange(desc(lon)) %>% 
+  distinct(postcode, .keep_all = T) %>% 
+  rename(postcode_correction = postcode,
+         ods_corrected = dag_id_e) %>% select(-lat, -lon)
+
+#lookup IMD15
+
+ccp_ethnicity_centre_lookup = ccp_ethnicity_centre_lookup %>% 
+  left_join(imd_update_15 %>% select(postcode, wIMD15), by = c('postcode' = 'postcode'))
+
+ccp_ethnicity_centre_lookup = ccp_ethnicity_centre_lookup %>% 
+  left_join(imd_update_15 %>% select(ods, wIMD15) %>% rename(wIMD15_2 = wIMD15), by = c('dag_id_e' = 'ods'))
+
+ccp_ethnicity_centre_lookup = ccp_ethnicity_centre_lookup %>% 
+  left_join(incorrect_ods_postcode_mapping, by = c('postcode' = 'postcode_correction')) %>% 
+  left_join(imd_update_15 %>% select(ods, wIMD15) %>% rename(wIMD15_3 = wIMD15), by = c('ods_corrected' = 'ods'))
+
+ccp_ethnicity_centre_lookup = ccp_ethnicity_centre_lookup %>% 
+  left_join(imd_update_15 %>% select(postcode, wIMD15) %>% rename(wIMD15_4 = wIMD15) %>% 
+              mutate(postcode_start = gsub("[[:space:]].*", '', postcode)) %>% select(-postcode), by = c('postcode_start'))
+
+ccp_ethnicity_centre_lookup = ccp_ethnicity_centre_lookup %>% 
+  mutate(ods_corrected = ifelse(ods_corrected == 'CBS25', 'RBS25', ods_corrected),
+         ods_corrected = ifelse(ods_corrected == 'RA009', 'RA901', ods_corrected),
+         ods_corrected = ifelse(ods_corrected == 'RAJ02', 'RAJ01', ods_corrected),
+         ods_corrected = ifelse(ods_corrected == 'RCX01', 'RXC01', ods_corrected),
+         ods_corrected = ifelse(ods_corrected == 'RJ2319', 'RJ231', ods_corrected)) %>% 
+  left_join(imd_update_15 %>% select(postcode, wIMD15) %>% rename(wIMD15_5 = wIMD15) %>% 
+              mutate(postcode_start = gsub("[[:space:]].*", '', postcode)) %>% select(-postcode), by = c('postcode_start'))
+
+ccp_ethnicity_centre_lookup = ccp_ethnicity_centre_lookup %>% 
+  mutate(wIMD15 = ifelse(is.na(wIMD15), wIMD15_2, wIMD15),
+         wIMD15 = ifelse(is.na(wIMD15), wIMD15_3, wIMD15),
+         wIMD15 = ifelse(is.na(wIMD15), wIMD15_4, wIMD15),
+         wIMD15 = ifelse(is.na(wIMD15), wIMD15_5, wIMD15))
+
+ccp_ethnicity_centre_lookup = ccp_ethnicity_centre_lookup %>% 
+  distinct(dag_id_e, .keep_all = T) %>% 
+  select(-wIMD15_2, -wIMD15_3, -wIMD15_4, -wIMD15_5) %>% 
+  rename(wimd15 = wIMD15) %>% 
+  select(-HBName, -HB19)
+
+ccp_ethnicity_centre_lookup_lite = ccp_ethnicity_centre_lookup %>% select(-contains('white'),
+                                                                     -contains('asian'),
+                                                                     -contains('perc'),
+                                                                     -contains('black'),
+                                                                     -contains('mixed'),
+                                                                     -contains('other'),
+                                                                     #-contains('imd_rank'),
+                                                                     -contains('minority'),
+                                                                     -contains('afric'),
+                                                                     -ods_corrected)
+
+
 #write csv
 save_date = Sys.Date() %>% format('%d-%B-%Y')
 
+#Export all files
 write_csv(ccp_ethnicity_centre_lookup, paste0('data_out_ccp_lookup_with_population_level_estimate/ccp_ethnicity_out_', save_date, '.csv'))
 write_csv(ccp_ethnicity_centre_lookup, paste0('data_out_ccp_lookup_with_population_level_estimate/ccp_ethnicity_out.csv'))
+
+
+#Export lite
+write_csv(ccp_ethnicity_centre_lookup_lite, paste0('data_out_ccp_lookup_with_population_level_estimate/ccp_ethnicity_lite_out_', save_date, '.csv'))
+write_csv(ccp_ethnicity_centre_lookup_lite, paste0('data_out_ccp_lookup_with_population_level_estimate/ccp_ethnicity_lite_out.csv'))
