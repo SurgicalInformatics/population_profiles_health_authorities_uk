@@ -282,6 +282,11 @@ ccp_ethnicity_centre_lookup = ccp_ethnicity_centre_lookup %>%
 
 ccp_ethnicity_centre_lookup = ccp_ethnicity_centre_lookup %>% 
   left_join(incorrect_ods_postcode_mapping, by = c('postcode' = 'postcode_correction')) %>% 
+  mutate(ods_corrected = ifelse(ods_corrected == 'CBS25', 'RBS25', ods_corrected),
+         ods_corrected = ifelse(ods_corrected == 'RA009', 'RA901', ods_corrected),
+         ods_corrected = ifelse(ods_corrected == 'RAJ02', 'RAJ01', ods_corrected),
+         ods_corrected = ifelse(ods_corrected == 'RCX01', 'RXC01', ods_corrected),
+         ods_corrected = ifelse(ods_corrected == 'RJ2319', 'RJ231', ods_corrected)) %>% 
   left_join(imd_update_15 %>% select(ods, wIMD15) %>% rename(wIMD15_3 = wIMD15), by = c('ods_corrected' = 'ods'))
 
 ccp_ethnicity_centre_lookup = ccp_ethnicity_centre_lookup %>% 
@@ -289,11 +294,6 @@ ccp_ethnicity_centre_lookup = ccp_ethnicity_centre_lookup %>%
               mutate(postcode_start = gsub("[[:space:]].*", '', postcode)) %>% select(-postcode), by = c('postcode_start'))
 
 ccp_ethnicity_centre_lookup = ccp_ethnicity_centre_lookup %>% 
-  mutate(ods_corrected = ifelse(ods_corrected == 'CBS25', 'RBS25', ods_corrected),
-         ods_corrected = ifelse(ods_corrected == 'RA009', 'RA901', ods_corrected),
-         ods_corrected = ifelse(ods_corrected == 'RAJ02', 'RAJ01', ods_corrected),
-         ods_corrected = ifelse(ods_corrected == 'RCX01', 'RXC01', ods_corrected),
-         ods_corrected = ifelse(ods_corrected == 'RJ2319', 'RJ231', ods_corrected)) %>% 
   left_join(imd_update_15 %>% select(postcode, wIMD15) %>% rename(wIMD15_5 = wIMD15) %>% 
               mutate(postcode_start = gsub("[[:space:]].*", '', postcode)) %>% select(-postcode), by = c('postcode_start'))
 
@@ -323,6 +323,12 @@ ccp_ethnicity_centre_lookup_lite = ccp_ethnicity_centre_lookup %>% select(-conta
 
 #write csv
 save_date = Sys.Date() %>% format('%d-%B-%Y')
+
+#Missing IMD15
+missing_imd15 = ccp_ethnicity_centre_lookup_lite %>% distinct(dag_id_e, .keep_all = T) %>% 
+  filter(is.na(wimd15) & country == 'England')
+
+write_csv(missing_imd15, paste0('data_out_ccp_lookup_with_population_level_estimate/ccp_needs_imd15', save_date, '.csv'))
 
 #Export all files
 write_csv(ccp_ethnicity_centre_lookup, paste0('data_out_ccp_lookup_with_population_level_estimate/ccp_ethnicity_out_', save_date, '.csv'))
