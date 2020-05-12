@@ -2,8 +2,20 @@
 library(tidyverse)
 library(janitor)
 library(rlang)
+library(ggmap)
 
+#define ni function
 `%ni%` = Negate(`%in%`)
+
+#postcode regex
+postcode_regex_string = '(?:[A-Za-z][A-HJ-Ya-hj-y]?[0-9][0-9A-Za-z]? ?[0-9][A-Za-z]{2}|[Gg][Ii][Rr] ?0[Aa]{2})'
+
+#google maps set up
+api_key = 'AIzaSyADK-Xycf5uqnyvYDPP58wSQdnLJZCzrr8' #Google maps API key
+
+register_google(api_key)
+
+#load in locations
 
 #read csv in
 ccp_from_location_centre_lookup = read_csv('https://raw.githubusercontent.com/SurgicalInformatics/ccp_location_lookups/master/data_out_ccp_lookups/ccp_dag_id_lookup.csv') #%>% 
@@ -266,8 +278,8 @@ imd_update_15 = read_csv('imd_lookups/lookup_hospital_imd_england.csv')
 #Create a lookup for incorrectly entered ods codes
 incorrect_ods_postcode_mapping = ccp_ethnicity_centre_lookup %>% 
   select(postcode, dag_id_e, lat, lon) %>% 
-  mutate(lat = round(lat, digits = 2),
-         lon = round(lon, digits = 2)) %>% arrange(desc(lon)) %>% 
+  mutate(lat = round(as.numeric(as.character(lat)), digits = 2),
+         lon = round(as.numeric(as.character(lon)), digits = 2)) %>% arrange(desc(lon)) %>% 
   distinct(postcode, .keep_all = T) %>% 
   rename(postcode_correction = postcode,
          ods_corrected = dag_id_e) %>% select(-lat, -lon)
@@ -309,6 +321,67 @@ ccp_ethnicity_centre_lookup = ccp_ethnicity_centre_lookup %>%
   rename(wimd15 = wIMD15) %>% 
   select(-HBName, -HB19)
 
+
+#Now add in the WELSH wIMD
+welsh_wimd = read_csv('imd_lookups/hospital_avg_wimd.csv') %>% clean_names() %>% 
+  rename(welsh_place_name = place_name) 
+
+welsh_coordinates = geocode(paste0(welsh_wimd$welsh_place_name, ' Wales, UK'), output = "latlona", source = "google") 
+
+welsh_wimd = cbind(welsh_wimd, welsh_coordinates) %>% 
+  mutate(postcode = toupper(str_extract(address, postcode_regex_string))) %>% filter(!grepl('mental|psych|Ty Bryngwyn Mawr', welsh_place_name, ignore.case = T)) 
+
+ccp_ethnicity_centre_lookup = ccp_ethnicity_centre_lookup %>%
+  distinct(postcode, dag_id_e, .keep_all = T) %>% 
+  left_join(welsh_wimd %>% select(postcode, avg_wimd_2019), by = c('postcode' = 'postcode')) %>% 
+  mutate(dag_id_corrected = dag_id_e,
+         dag_id_corrected = ifelse(dag_id_corrected == '7A3YA', '7A3B7', dag_id_corrected),
+         dag_id_corrected = ifelse(dag_id_corrected == '11049', '7A6AR', dag_id_corrected),
+         dag_id_corrected = ifelse(dag_id_corrected == '11409', '7A6AR', dag_id_corrected)) %>% 
+  left_join(welsh_wimd %>% select(site_cd_of_treat, avg_wimd_2019) %>% rename(avg_wimd_2019_miss = avg_wimd_2019), 
+            by = c('dag_id_corrected' = 'site_cd_of_treat')) %>% 
+  mutate(avg_wimd_2019 = ifelse((is.na(avg_wimd_2019) & country == 'Wales'), avg_wimd_2019_miss, avg_wimd_2019)) %>% 
+   group_by(place_name) %>%
+  filter(!is.na(avg_wimd_2019) | country != 'Wales') %>% 
+  ungroup() %>% 
+  select(-avg_wimd_2019_miss, -dag_id_corrected)# This is for all admissions - not just pneumonia/ flu
+
+#Now for the Scottish one
+scottish_wimd = read_csv('imd_lookups/hospital_simd_rank_non_el.csv') %>% 
+                clean_names() %>% 
+                select(dag_id, weighted_arith)
+                
+
+ccp_ethnicity_centre_lookup = ccp_ethnicity_centre_lookup %>% 
+  left_join(scottish_wimd %>% select(dag_id, weighted_arith), by = c('dag_id_e' = 'dag_id')) %>% 
+  mutate(dag_id_corrected = dag_id_e,
+         dag_id_corrected = ifelse(dag_id_corrected == 'GN405', 'G405H', dag_id_corrected),
+         dag_id_corrected = ifelse(dag_id_corrected == 'N100H', 'N101H', dag_id_corrected),
+         dag_id_corrected = ifelse(dag_id_corrected == 'S341H', 'S314H', dag_id_corrected),
+         dag_id_corrected = ifelse(dag_id_corrected == 'SL116', 'S116H', dag_id_corrected)) %>% 
+  left_join(scottish_wimd %>% select(dag_id, weighted_arith) %>% rename(weighted_arith_miss = weighted_arith),
+            by = c('dag_id_corrected' = 'dag_id')) %>% 
+  mutate(weighted_arith = ifelse((is.na(weighted_arith) & country == 'Scotland'), weighted_arith_miss, weighted_arith)) %>% 
+  select(-weighted_arith_miss, -dag_id_corrected)# This is for all admissions - not just pneumonia/ flu
+
+
+ccp_ethnicity_centre_lookup = ccp_ethnicity_centre_lookup %>% #make wimd
+  mutate(w_imd = wimd15,
+         w_imd = ifelse(is.na(w_imd), weighted_arith, w_imd),
+         w_imd = ifelse(is.na(w_imd), avg_wimd_2019, w_imd))
+  
+
+#make scaled
+ccp_ethnicity_centre_lookup = ccp_ethnicity_centre_lookup %>% 
+  group_by(country) %>% 
+  mutate(w_imd_centred = w_imd - mean(w_imd, na.rm = T),
+         w_imd_centred_std_country = (w_imd - mean(w_imd, na.rm = T)/ sd(w_imd, na.rm = T))) %>% 
+  ungroup() %>% 
+  mutate(w_imd_centred_std_uk = w_imd_centred/ sd(w_imd, na.rm = T))
+  
+
+
+#lite
 ccp_ethnicity_centre_lookup_lite = ccp_ethnicity_centre_lookup %>% select(-contains('white'),
                                                                      -contains('asian'),
                                                                      -contains('perc'),
