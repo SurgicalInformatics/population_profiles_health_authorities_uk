@@ -375,12 +375,18 @@ ccp_ethnicity_centre_lookup = ccp_ethnicity_centre_lookup %>% #make wimd
 ccp_ethnicity_centre_lookup = ccp_ethnicity_centre_lookup %>% 
   group_by(country) %>% 
   mutate(w_imd_centred = w_imd - mean(w_imd, na.rm = T),
-         w_imd_centred_std_country = (w_imd - mean(w_imd, na.rm = T)/ sd(w_imd, na.rm = T))) %>% 
+         w_imd_centred_std_country = (w_imd - mean(w_imd, na.rm = TRUE)) / sd(w_imd, na.rm = TRUE),
+         w_imd_centred_std_country = if_else(country == "England", 
+                                             w_imd_centred_std_country * -1, 
+                                             w_imd_centred_std_country)) %>% 
   ungroup() %>% 
-  mutate(w_imd_centred_std_uk = w_imd_centred/ sd(w_imd, na.rm = T))
+  mutate(w_imd_centred_std_uk = (w_imd - mean(w_imd, na.rm = TRUE)) / sd(w_imd, na.rm = TRUE),
+  w_imd_centred_std_uk = if_else(country == "England", 
+                                 w_imd_centred_std_uk * -1, 
+                                 w_imd_centred_std_uk)) %>% 
+  ungroup() %>% 
+  distinct(dag_id_e, .keep_all = T)
   
-
-
 #lite
 ccp_ethnicity_centre_lookup_lite = ccp_ethnicity_centre_lookup %>% select(-contains('white'),
                                                                      -contains('asian'),
